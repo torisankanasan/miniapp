@@ -2,187 +2,156 @@
 <html lang="ja">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, maximum-scale=1.0" />
-    <meta http-equiv="X-UA-Compatible" content="ie=edge" />
-    <style type="text/css">
-      html, body {
-        font-family: -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, Oxygen, Ubuntu, Cantarell, Fira Sans, Droid Sans, Helvetica Neue, sans-serif;
-        margin: 0;
-        padding: 0;
-      }
-      .home {
-        padding: 2rem 1rem;
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>GPS通知アプリ</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
         text-align: center;
+        padding: 20px;
+        background-color: #f5f5f5;
       }
-      .home__title {
-        font-size: 2.5rem;
-        line-height: 1.15;
-        margin-bottom: 1rem;
+      h1 {
+        color: #333;
       }
-      .user-id {
-        font-size: 1rem;
-        color: #555;
-        margin-bottom: 1.5rem;
+      #status {
+        font-size: 18px;
+        margin: 20px 0;
       }
-      .form-container {
-        max-width: 100%;
-        margin: 0 auto;
-        padding: 1rem;
-        border: 1px solid #ccc;
-        border-radius: 10px;
-        background-color: #f9f9f9;
+      #distance {
+        font-size: 24px;
+        font-weight: bold;
+        color: #d9534f;
       }
-      .form-field {
-        margin-bottom: 1rem;
-      }
-      .form-field label {
-        display: block;
-        margin-bottom: 0.5rem;
-        font-size: 1rem;
-      }
-      .form-field input,
-      .form-field select {
-        width: 100%;
-        padding: 0.5rem;
-        font-size: 1rem;
-        border: 1px solid #ccc;
-        border-radius: 5px;
-      }
-      .form-button {
-        background-color: #00B900;
+      button {
+        background-color: #5cb85c;
         color: white;
+        font-size: 18px;
+        padding: 10px 20px;
         border: none;
-        padding: 0.75rem;
-        font-size: 1rem;
-        cursor: pointer;
         border-radius: 5px;
-        transition: background-color 0.3s;
-        width: 100%;
-        margin-top: 1rem;
+        cursor: pointer;
       }
-      .form-button:hover {
-        background-color: #009300;
+      button:hover {
+        background-color: #4cae4c;
       }
-      @media screen and (max-width: 600px) {
-        html {
-          font-size: 14px;
-        }
-        .home__title {
-          font-size: 2rem;
-        }
-      }
-        input {
-            font-size: 16px;
-            transform: scale(0.8);
-        }
     </style>
-    <title>会員登録フォーム</title>
+  </head>
+  <body>
+    <h1>GPS通知アプリ</h1>
+    <p id="status">位置情報を取得中...</p>
+    <p>目的地（東京駅）までの距離:</p>
+    <p id="distance">- m</p>
+    <button onclick="watchUserLocation()">位置情報を更新</button>
     <script src="https://static.line-scdn.net/liff/edge/2.1/sdk.js"></script>
     <script>
       function initializeLiff(myLiffId) {
         liff
           .init({
-            liffId: myLiffId
+            liffId: myLiffId,
           })
           .then(() => {
             // LIFF initialization succeeded
-            console.log('LIFF initialized');
+            console.log("LIFF initialized");
             getUserProfile();
           })
           .catch((err) => {
             // LIFF initialization failed
-            console.error('LIFF initialization failed', err);
+            console.error("LIFF initialization failed", err);
           });
       }
-
-      function getUserProfile() {
-        liff.getProfile()
-          .then(profile => {
-            const userId = profile.userId;
-            document.getElementById('userId').textContent = `ユーザーID: ${userId}`;
-          })
-          .catch((err) => {
-            console.error('プロフィール情報の取得に失敗しました', err);
-          });
-      }
-
-      function sendMessage() {
-        const name = document.getElementById('name').value;
-        const email = document.getElementById('email').value;
-        const password = document.getElementById('password').value;
-        const age = document.getElementById('age').value;
-        const gender = document.getElementById('gender').value;
-        const address = document.getElementById('address').value;
-
-        const message = `登録情報:\n名前: ${name}\nメール: ${email}\n年齢: ${age}\n性別: ${gender}\n住所: ${address}`;
-
-        liff.sendMessages([
-          {
-            type: 'text',
-            text: message
-          }
-        ])
-        .then(() => {
-          alert('メッセージが送信されました');
-          liff.closeWindow();
-        })
-        .catch((err) => {
-          console.error('メッセージ送信エラー', err);
-          alert('メッセージの送信に失敗しました');
-        });
-      }
-
-      document.addEventListener('DOMContentLoaded', function () {
-        const myLiffId = '2006972941-yNAkRXPp'; // ここにあなたのLIFF IDを入力してください
+      document.addEventListener("DOMContentLoaded", function () {
+        const myLiffId = "2001180060-5dJEZQ40"; // ここにあなたのLIFF IDを入力してください
         initializeLiff(myLiffId);
-
-        document.querySelector('form').addEventListener('submit', function (event) {
-          event.preventDefault();
-          sendMessage();
-        });
       });
+      // 目的地の座標（東京駅）
+      const DEST_LAT = 35.6678664;
+      const DEST_LNG = 139.75736;
+      const ALERT_DISTANCE = 100; // 100m以内で通知
+
+      let audioContext, oscillator;
+
+      function setupAudio() {
+        audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        oscillator = audioContext.createOscillator();
+        oscillator.type = "sine";
+        oscillator.frequency.setValueAtTime(440, audioContext.currentTime);
+        oscillator.start();
+        oscillator.disconnect(); // 初期状態で音を鳴らさない
+      }
+
+      function watchUserLocation() {
+        if (!navigator.geolocation) {
+          alert("このブラウザは位置情報をサポートしていません。");
+          return;
+        }
+
+        navigator.geolocation.watchPosition(successCallback, errorCallback, {
+          enableHighAccuracy: true,
+          maximumAge: 10000,
+          timeout: 5000,
+        });
+      }
+
+      function successCallback(position) {
+        const userLat = position.coords.latitude;
+        const userLng = position.coords.longitude;
+
+        document.getElementById(
+          "status"
+        ).innerText = `現在位置: ${userLat.toFixed(6)}, ${userLng.toFixed(6)}`;
+
+        const distance = getDistance(userLat, userLng, DEST_LAT, DEST_LNG);
+        document.getElementById("distance").innerText = `${distance.toFixed(
+          2
+        )} m`;
+
+        if (distance <= ALERT_DISTANCE) {
+          playSound();
+        }
+      }
+
+      function errorCallback(error) {
+        console.error("位置情報の取得に失敗:", error.message);
+        document.getElementById("status").innerText =
+          "位置情報の取得に失敗しました。";
+      }
+
+      function getDistance(lat1, lon1, lat2, lon2) {
+        const R = 6371000; // 地球の半径（m）
+        const toRad = (deg) => (deg * Math.PI) / 180;
+        const dLat = toRad(lat2 - lat1);
+        const dLon = toRad(lon2 - lon1);
+
+        const a =
+          Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+          Math.cos(toRad(lat1)) *
+            Math.cos(toRad(lat2)) *
+            Math.sin(dLon / 2) *
+            Math.sin(dLon / 2);
+
+        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+        return R * c;
+      }
+
+      function playSound() {
+        if (!audioContext) {
+          setupAudio();
+        }
+
+        const gainNode = audioContext.createGain();
+        oscillator.connect(gainNode);
+        gainNode.connect(audioContext.destination);
+        gainNode.gain.setValueAtTime(1, audioContext.currentTime);
+
+        setTimeout(() => {
+          gainNode.gain.setValueAtTime(0, audioContext.currentTime);
+          oscillator.disconnect(gainNode);
+        }, 1000);
+      }
+
+      // 初回ロード時に位置情報の監視を開始
+      watchUserLocation();
     </script>
-  </head>
-  <body>
-    <div class="home">
-      <h1 class="home__title">
-        会員登録
-      </h1>
-      <div id="userId" class="user-id">ユーザーIDを取得中...</div>
-      <div class="form-container">
-        <form>
-          <div class="form-field">
-            <label for="name">名前</label>
-            <input type="text" id="name" name="name" required />
-          </div>
-          <div class="form-field">
-            <label for="email">メールアドレス</label>
-            <input type="email" id="email" name="email" required />
-          </div>
-          <div class="form-field">
-            <label for="password">パスワード</label>
-            <input type="password" id="password" name="password" required />
-          </div>
-          <div class="form-field">
-            <label for="age">年齢</label>
-            <input type="number" id="age" name="age" min="0" required />
-          </div>
-          <div class="form-field">
-            <label for="gender">性別</label>
-            <select id="gender" name="gender" required>
-              <option value="">選択してください</option>
-              <option value="male">男性</option>
-              <option value="female">女性</option>
-              <option value="other">その他</option>
-            </select>
-          </div>
-          <div class="form-field">
-            <label for="address">住所</label>
-            <input type="text" id="address" name="address" required />
-          </div>
-          <button type="submit" class="form-button">登録</button>
-        </form>
-      </div>
-    </div>
   </body>
 </html>
