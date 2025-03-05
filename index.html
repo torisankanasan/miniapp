@@ -151,7 +151,19 @@
       }
 
       // 初回ロード時に位置情報の監視を開始
-      watchUserLocation();
+      // watchUserLocation();
+      window.onload = function () {
+        // ページ読み込みと同時にロード
+        wa.loadFile("./assets/sample.mp3", function (buffer) {
+          wa.play(buffer);
+
+          // ユーザーイベント
+          var event = "click";
+          document.addEventListener(event, function () {
+            wa.playSilent();
+          });
+        });
+      };
     </script>
   </body>
 </html>
