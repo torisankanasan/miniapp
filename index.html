@@ -63,6 +63,18 @@
       document.addEventListener("DOMContentLoaded", function () {
         const myLiffId = "2001180060-5dJEZQ40"; // ここにあなたのLIFF IDを入力してください
         initializeLiff(myLiffId);
+
+        // ページ読み込みと同時にロード
+        wa.loadFile("./assets/sample.mp3", function (buffer) {
+          wa.play(buffer);
+
+          // ユーザーイベント
+          var event = "click";
+          document.addEventListener(event, function () {
+            wa.playSilent();
+            console.log("click!");
+          });
+        });
       });
       // 目的地の座標（東京駅）
       const DEST_LAT = 35.6678664;
@@ -152,19 +164,6 @@
 
       // 初回ロード時に位置情報の監視を開始
       // watchUserLocation();
-      window.onload = function () {
-        // ページ読み込みと同時にロード
-        wa.loadFile("./assets/sample.mp3", function (buffer) {
-          wa.play(buffer);
-
-          // ユーザーイベント
-          var event = "click";
-          document.addEventListener(event, function () {
-            wa.playSilent();
-            console.log("click!");
-          });
-        });
-      };
     </script>
   </body>
 </html>
